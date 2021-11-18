@@ -3,9 +3,10 @@ import time
 GPIO.setwarnings(False)
 GPIO.setmode(GPIO.BOARD)
 
-GPIO.setup(16,GPIO.OUT)
-pwm=GPIO.PWM(16,50)
+GPIO.setup(32,GPIO.OUT)
+pwm=GPIO.PWM(32,50)
 pwm.start(1)
+
 try:
     while True:
         print("ok")
