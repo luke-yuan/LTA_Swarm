@@ -1,15 +1,17 @@
 import socket
 from multiprocessing import Process,Pipe
 import time
-import control as co
+import motors as co
 import flightsensor as sensor
 import Apriltag 
-from Apriltag import Detector
+from pupil_apriltags import Detector
+from picamera.array import PiRGBArray
+from picamera import PiCamera
 import cv2
 serverPort = 12002
 
 serverSocket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-serverSocket.bind(('192.168.1.114',serverPort))
+serverSocket.bind(('192.168.0.109',serverPort))
 serverSocket.listen(1)
 
 running = True          # Looping variable
@@ -63,7 +65,7 @@ try:
             num=0
             tags = at_detector.detect(img)
             if tags:
-                AT_ID=int(str(tags[0]))
+                #AT_ID=int(str(tags[0]))
                 print("ID "+ str(tags[0]))
         num=num+1
         # if AT_ang >180 or AT_ang <-180:
@@ -139,4 +141,3 @@ try:
     serverSocket.close()
 except:
     serverSocket.close()
-    raise

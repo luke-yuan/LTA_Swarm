@@ -23,7 +23,7 @@ at_detector = Detector(families='tag36h11',
                        refine_edges=1,
                        decode_sharpening=0.25,
                        debug=0)
-results = detector.detect(gray)
+results = at_detector.detect(gray)
 print("[INFO] {} total AprilTags detected".format(len(results)))
 
 for r in results:

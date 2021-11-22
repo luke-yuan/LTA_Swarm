@@ -1,56 +1,59 @@
+import qwiic_vl53l1x as qwiic
 import time
-import VL53L0X
 import RPi.GPIO as GPIO
 
-XSHUT=[15,16,18]
-GPIO.setwarnings(False)
-GPIO.setmode(GPIO.BOARD)
-# Setup GPIO for shutdown pins on each VL53L0X
+GPIO.setmode(GPIO.BCM)
+XSHUT = [23, 20] # 15
+address = {23 : 0x2B, 20 : 0x2D, 15: 0x2F}
+
 for pin in XSHUT:
     GPIO.setup(pin, GPIO.OUT)
     GPIO.output(pin, GPIO.LOW)
 
-# Keep all low for 500 ms or so to make sure they reset
-time.sleep(0.5)
-
-# Create one object per VL53L0X passing the address to give to
-# each.
-tof_objects = {}
-tof_objects[XSHUT[0]] = VL53L0X.VL53L0X(address=0x2A)
-tof_objects[XSHUT[1]] = VL53L0X.VL53L0X(address=0x2C)
-tof_objects[XSHUT[2]] = VL53L0X.VL53L0X(address=0x2E)
-
-# Set shutdown pin high for VL53L0X then call to start ranging
-for pin in XSHUT:
-    GPIO.output(pin, GPIO.HIGH)
-    time.sleep(0.50)
-    tof_objects[pin].start_ranging(VL53L0X.VL53L0X_BETTER_ACCURACY_MODE)
+time.sleep(1)
+print("VL53L1X Qwiic Test\n")
+tofs = []
+for i in range(len(XSHUT)):
+    GPIO.output(XSHUT[i], GPIO.HIGH)
+    time.sleep(1)
+    tofs.append(qwiic.QwiicVL53L1X())
+    tofs[i].set_i2c_address(address[XSHUT[i]])  
+    if (tofs[i].sensor_init() == None):                                  # Begin returns 0 on a good init
+        print("Sensor online!\n")
 
 
 def measurement():
-        global distances 
+    global distances
 
-        distance1=tof_objects[XSHUT[0]].get_distance()
-        distance2=tof_objects[XSHUT[1]].get_distance()
-        distance3=tof_objects[XSHUT[2]].get_distance()
-        distances=[distance1,distance2,distance3]
-        
-        return distances
-
-if __name__ == '__main__': 
-    con=True
-    try:
-        while(con):
-            a=measurement()
-            print(a)
-
-            time.sleep(0.1)
-    except KeyboardInterrupt:
-        con=False
-        print("Ctl C pressed")
-        tof_objects[XSHUT[0]].stop_ranging()
-        tof_objects[XSHUT[1]].stop_ranging()
-        tof_objects[XSHUT[2]].stop_ranging()
-        GPIO.cleanup()
+    distances = []
+    for tof in tofs:
+        tof.start_ranging()
+        time.sleep(.005)
+        distances.append(tof.get_distance())
+        time.sleep(.005)
+        tof.stop_ranging()
+    
+    distances.append(10)
+    return distances
 
 
+
+
+if __name__ == '__main__':
+    while True:
+            try:
+                for ToF in tofs:
+                    ToF.start_ranging()                                              # Write configuration bytes to initiate measurement
+                    time.sleep(.005)
+                    distance = ToF.get_distance()    # Get the result of the measurement from the sensor
+                    time.sleep(.005)
+                    ToF.stop_ranging()
+
+                    distanceInches = distance / 25.4
+                    distanceFeet = distanceInches / 12.0
+
+                    print("Distance(mm): %s Distance(ft): %s" % (distance, distanceFeet))
+                    time.sleep(1)
+
+            except Exception as e:
+                    print(e)
